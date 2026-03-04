@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IHK KI-Quiz</title>
+
+    <!-- Verknüpfung zur CSS-Datei. Der Browser sucht nach 'style.css' im selben Ordner. -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Lädt die 'Inter' Schriftart von Google Fonts, wie im CSS definiert. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Dekorative Hintergrund-Blobs -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+
+        <header class="app-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m12 14 4-4"></path>
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
+                </svg>
+                <span>KI-Quiz</span>
+            </div>
+            <div id="progress-info" class="progress-info">
+                <div id="timer-display" class="timer-display">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="timer-text">20:00</span>
+                </div>
+                <div id="avg-time-display" class="timer-display">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 22h14" />
+                        <path d="M5 2h14" />
+                        <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                        <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                    </svg>
+                    <span id="avg-time-text">--:--</span>
+                </div>
+                <span id="progress-text">Frage 1 / 100</span>
+                <div class="progress-bar-track">
+                    <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Start Screen -->
+            <section id="screen-start" class="screen active">
+                <div class="glass-card start-card">
+                    <div class="start-icon-wrapper">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m12 14 4-4"></path>
+                            <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
+                        </svg>
+                    </div>
+                    <h1>Willkommen zum KI-Quiz!</h1>
+                    <p class="start-description">Teste dein Wissen rund um <strong>Künstliche Intelligenz</strong>,
+                        Projektmanagement und neue Technologien. Wähle eine Kategorie und starte die Prüfungssimulation.
+                    </p>
+
+                    <div class="category-selector">
+                        <span class="category-label">Kategorie wählen</span>
+                        <div id="category-chips" class="category-chips"></div>
+                    </div>
+
+                    <div class="settings-selector">
+                        <span class="category-label">Einstellungen</span>
+                        <div class="settings-inputs">
+                            <div class="setting-group">
+                                <label for="input-time">Zeit (Minuten)</label>
+                                <input type="number" id="input-time" class="setting-input" value="20" min="1" max="180">
+                            </div>
+                            <div class="setting-group">
+                                <label for="input-questions">Anzahl Fragen</label>
+                                <input type="number" id="input-questions" class="setting-input" value="40" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="start-stats">
+                        <div class="stat">
+                            <span id="stat-questions" class="stat-value">100</span>
+                            <span class="stat-label">Fragen verfügbar</span>
+                        </div>
+                        <div class="stat">
+                            <span id="stat-multi" class="stat-value">50</span>
+                            <span class="stat-label">Multiple-Choice</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-start" class="btn btn-primary btn-lg">Quiz starten</button>
+                </div>
+            </section>
+
+            <!-- Quiz Screen -->
+            <section id="screen-quiz" class="screen">
+                <div class="quiz-top-bar">
+                    <button id="btn-quiz-back" class="btn-back">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>Zurück</span>
+                    </button>
+                    <div class="live-score">
+                        <div class="score-badge correct-badge">✓ <span id="live-correct">0</span></div>
+                        <div class="score-badge wrong-badge">✗ <span id="live-wrong">0</span></div>
+                        <div class="score-badge unanswered-badge">? <span id="live-unanswered">0</span></div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <div class="question-header">
+                        <span id="question-badge" class="question-badge">Frage 1</span>
+                        <span id="question-category-badge" class="question-category-badge">Kategorie</span>
+                    </div>
+                    <div class="question-meta">
+                        <p id="question-hint" class="question-hint">1 richtige Antwort</p>
+                        <div id="question-timer-display" class="timer-display question-timer hidden">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span id="question-timer-text">--:--</span>
+                        </div>
+                    </div>
+                    <h2 id="question-text" class="question-text">Fragentext...</h2>
+
+                    <div id="options-list" class="options-list">
+                        <!-- Antwortoptionen werden hier von JavaScript eingefügt -->
+                    </div>
+
+                    <div id="rationale-box" class="rationale-box hidden">
+                        <h3 id="rationale-title" class="rationale-icon"></h3>
+                        <div id="rationale-text"></div>
+                    </div>
+
+                    <div class="quiz-actions">
+                        <button id="btn-skip" class="btn btn-secondary">Überspringen</button>
+                        <button id="btn-check" class="btn btn-primary" disabled>Antwort überprüfen</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result Screen -->
+            <section id="screen-result" class="screen">
+                <div class="glass-card result-card">
+                    <div id="result-icon-wrapper" class="result-icon-wrapper"></div>
+                    <h2 id="result-title" class="result-title">Ergebnis</h2>
+                    <p id="result-subtitle" class="result-subtitle">Dein Ergebnis im Detail.</p>
+
+                    <div class="result-score-ring">
+                        <svg class="score-svg" viewBox="0 0 120 120">
+                            <circle class="score-track" cx="60" cy="60" r="52" />
+                            <circle id="score-circle" class="score-fill" cx="60" cy="60" r="52" stroke-dasharray="326.7"
+                                stroke-dashoffset="326.7" />
+                        </svg>
+                        <div class="score-label">
+                            <span id="score-number" class="score-number">0</span>
+                            <span id="score-total" class="score-total">/ 100</span>
+                        </div>
+                    </div>
+
+                    <p id="result-message" class="result-message">Nachricht zum Ergebnis...</p>
+
+                    <div id="wrong-answers-summary" class="wrong-answers-summary hidden">
+                        <h3 class="wrong-answers-title">Überprüfe deine Fehler</h3>
+                        <div id="wrong-answers-list" class="wrong-answers-list">
+                            <!-- Falsche Antworten werden hier von JavaScript eingefügt -->
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <button id="btn-export-pdf" class="btn btn-secondary hidden">Als PDF exportieren</button>
+                        <button id="btn-retry-incorrect" class="btn btn-secondary hidden">Fehler wiederholen</button>
+                        <button id="btn-restart" class="btn btn-primary">Erneut versuchen</button>
+                        <button id="btn-back-home" class="btn btn-secondary">Zur Startseite</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            © 2024 KI-Quiz. Eine IHK-Prüfungssimulation.
+        </footer>
+    </div>
+
+    <!-- Modal für Zeitablauf -->
+    <div id="modal-timeup" class="modal-overlay hidden">
+        <div class="glass-card modal-card">
+            <div class="modal-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h2>Zeit abgelaufen!</h2>
+            <p>Die Zeit für das Quiz ist leider um. Aber keine Sorge, du kannst dir dein bisheriges Ergebnis ansehen.
+            </p>
+            <button id="btn-timeup-result" class="btn btn-primary">Ergebnis anzeigen</button>
+        </div>
+    </div>
+
+    <!-- Template für die Quiz-Antwortoptionen. Wird von JS geklont. -->
+    <template id="option-template">
+        <div class="option-item" role="checkbox" aria-checked="false" tabindex="0">
+            <div class="option-checkbox">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <span class="option-label">A</span>
+            <span class="option-text">Option text</span>
+            <span class="option-result-icon"></span>
+        </div>
+    </template>
+
+    <!-- Scripts werden am Ende des body geladen, um sicherzustellen, dass die Seite vorher sichtbar ist. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="quiz-data.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
