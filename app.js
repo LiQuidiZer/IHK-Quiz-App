@@ -37,6 +37,7 @@
     const statMulti = $('#stat-multi');
     const inputTime = $('#input-time');
     const inputQuestions = $('#input-questions');
+    const inputShowHints = $('#input-show-hints');
 
     // Live Score & Quiz Top Bar
     const liveCorrect = $('#live-correct');
@@ -271,9 +272,16 @@
             const shortCat = q.category.replace(/^\d+\s*/, '');
             block.querySelector('.question-category-badge').textContent = shortCat;
             const multipleCorrect = q.correctAnswers.length > 1;
-            block.querySelector('.question-hint').textContent = multipleCorrect
-                ? `${q.correctAnswers.length} richtige Antworten`
-                : '1 richtige Antwort';
+            
+            const showHints = inputShowHints && inputShowHints.checked;
+            if (showHints) {
+                block.querySelector('.question-hint').textContent = multipleCorrect
+                    ? `${q.correctAnswers.length} richtige Antworten`
+                    : '1 richtige Antwort';
+            } else {
+                block.querySelector('.question-hint').textContent = 'Wähle die passenden Antworten';
+            }
+            
             block.querySelector('.question-text').textContent = q.question;
 
             const blockOptionsList = block.querySelector('.options-list');
