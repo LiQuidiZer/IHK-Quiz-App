@@ -22,6 +22,11 @@ Eine interaktive Web-App zur Vorbereitung auf IHK-Prüfungen im Bereich Künstli
 *   **Verlauf**: Die letzten Ergebnisse werden lokal im Browser gespeichert und auf der Startseite angezeigt.
 *   **Responsive Design**: Optimierte Darstellung für Desktop, Tablet und Smartphone.
 
+## Changelog
+
+Eine detaillierte Übersicht über alle Entwicklungsschritte und neuen Funktionen findest du im
+[**Entwicklungs-Log (log.md)**](./log.md).
+
 ## Installation & Nutzung
 
 Da die Anwendung auf reinem HTML, CSS und JavaScript basiert, ist keine Server-Installation notwendig.

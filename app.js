@@ -245,6 +245,7 @@
         // Force reflow for animation
         void screen.offsetWidth;
         screen.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // ── Render Question Batch ──────────────────────────────
