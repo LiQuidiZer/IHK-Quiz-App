@@ -1336,6 +1336,23 @@ body {
 }
 .wrong-q-option.correct .option-line-indicator { color: var(--correct); }
 
+/* Missed correct options when the user selected a wrong answer */
+.wrong-q-option.missed {
+  background-color: rgba(251, 191, 36, 0.06); /* light yellow */
+  border-color: rgba(251, 191, 36, 0.18);
+}
+.wrong-q-option.missed .option-line-indicator { color: #fbbf24; }
+
+/* Summary line shown above options list to state the correct answer(s) */
+.wrong-q-correct-summary {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+.wrong-q-correct-summary strong {
+  font-weight: 600;
+}
+
 .wrong-q-option.wrong {
   background-color: var(--wrong-bg);
   border-color: var(--wrong-border);

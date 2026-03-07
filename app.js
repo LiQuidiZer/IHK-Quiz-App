@@ -509,6 +509,13 @@
                 const selectedSet = new Set(selected);
                 const correctSet = new Set(question.correctAnswers);
 
+                // Build a concise summary of what the correct answer(s) would have been
+                const correctTexts = question.correctAnswers
+                    .map(i => `${question.options[i].label}) ${question.options[i].text}`)
+                    .join(', ');
+                const answerLabel = question.correctAnswers.length > 1 ? 'Richtige Antworten' : 'Richtige Antwort';
+                const correctSummaryLine = `<p class="wrong-q-correct-summary"><strong>${answerLabel} wäre${question.correctAnswers.length > 1 ? 'n' : ''}: ${correctTexts}</strong></p>`;
+
                 let optionsHtml = '<div class="wrong-q-options-list">';
                 question.options.forEach((opt, index) => {
                     const isSelected = selectedSet.has(index);
@@ -521,8 +528,13 @@
                         itemClass += ' wrong';
                         indicator = '✗ Deine Wahl';
                     } else if (isCorrect) {
-                        itemClass += ' correct';
-                        indicator = isSelected ? '✓ Deine Wahl' : '✓ Richtige Antwort';
+                        if (isSelected) {
+                            itemClass += ' correct';
+                            indicator = '✓ Deine Wahl';
+                        } else {
+                            itemClass += ' missed';
+                            indicator = 'Wäre richtig gewesen';
+                        }
                     } else { // not selected, not correct
                         itemClass += ' neutral';
                     }
@@ -538,6 +550,26 @@
                     `;
                 });
                 optionsHtml += '</div>';
+
+                // Rationale (Erklärung) hinzufügen, falls vorhanden
+                let rationaleHtml = '';
+                if (question.rationale) {
+                    rationaleHtml = `<div class="wrong-q-rationale"><strong>Erklärung:</strong> ${question.rationale}</div>`;
+                }
+
+                const formattedTime = timestamp.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+                summaryItem.innerHTML = `
+                    <div class="wrong-q-header">
+                        <p class="wrong-q-text">${question.question}</p>
+                        <span class="wrong-q-timestamp">${formattedTime} Uhr</span>
+                    </div>
+                    ${correctSummaryLine}
+                    ${optionsHtml}
+                    ${rationaleHtml}
+                `;
+                wrongAnswersList.appendChild(summaryItem);
+            });
 
                 // Rationale (Erklärung) hinzufügen, falls vorhanden
                 let rationaleHtml = '';
@@ -812,6 +844,13 @@
                 const formattedTime = timestamp.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                 const questionTextLines = doc.splitTextToSize(`${index + 1}. ${question.question}`, contentWidth);
                 
+                // build a summary line for correct answer(s)
+                const correctTexts = question.correctAnswers
+                    .map(i => `${question.options[i].label}) ${question.options[i].text}`)
+                    .join(', ');
+                const answerLabel = question.correctAnswers.length > 1 ? 'Richtige Antworten' : 'Richtige Antwort';
+                const corrSummaryLines = doc.splitTextToSize(`${answerLabel}: ${correctTexts}`, contentWidth);
+
                 const allOptionsText = [];
                 question.options.forEach((opt, optIndex) => {
                     const isSelected = selectedSet.has(optIndex);
@@ -819,7 +858,7 @@
                     let indicator = '';
                     if (isSelected && !isCorrect) indicator = '(✗ Deine Wahl)';
                     else if (isSelected && isCorrect) indicator = '(✓ Deine Wahl)';
-                    else if (!isSelected && isCorrect) indicator = '(✓ Richtig)';
+                    else if (!isSelected && isCorrect) indicator = '(Wäre richtig gewesen)';
                     allOptionsText.push(`${opt.label}) ${opt.text} ${indicator}`);
                 });
                 const allOptionsLines = doc.splitTextToSize(allOptionsText.join('\n'), contentWidth);
@@ -831,6 +870,15 @@
                 doc.setTextColor(0, 0, 0);
                 doc.text(questionTextLines, margin, y);
                 y += questionTextLines.length * lineHeight + 1;
+
+                // print correct answer summary
+                if (corrSummaryLines && corrSummaryLines.length) {
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    doc.setTextColor(40, 40, 40);
+                    doc.text(corrSummaryLines, margin, y);
+                    y += corrSummaryLines.length * lineHeight + 2;
+                }
 
                 // Add timestamp
                 doc.setFont("helvetica", "italic");
