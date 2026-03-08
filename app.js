@@ -15,6 +15,11 @@
     let startTime = null;
     const BATCH_SIZE = 5;
 
+    // --------------------------------------------------
+    // application version, shown in header
+    const APP_VERSION = '1.3.1';
+    // --------------------------------------------------
+
     // ── DOM References ─────────────────────────────────────
     const $ = (sel) => document.querySelector(sel);
     const screenStart = $('#screen-start');
@@ -77,6 +82,14 @@
     const avgTimeText = $('#avg-time-text');
     const modalTimeup = $('#modal-timeup');
     const btnTimeupResult = $('#btn-timeup-result');
+
+    // display app version in header if element exists
+    function showVersion() {
+        const el = document.getElementById('app-version');
+        if (el && APP_VERSION) {
+            el.textContent = `v${APP_VERSION}`;
+        }
+    }
 
     // ── Extract unique categories from data ────────────────
     function getCategories() {

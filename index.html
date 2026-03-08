@@ -243,6 +243,14 @@
             text-decoration: underline;
             padding: 0.5rem;
         }
+
+        /* ------------ version label styling ------------ */
+        .app-version {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: 6px;
+            align-self: center;
+        }
         #btn-clear-history:hover { color: #64748b; }
 
         /* ==========================================================================
@@ -324,6 +332,8 @@
                     <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
                 </svg>
                 <span>KI-Quiz</span>
+                <!-- version text, updated via JavaScript -->
+                <span id="app-version" class="app-version"></span>
             </div>
             <div id="progress-info" class="progress-info">
                 <div id="timer-display" class="timer-display">
