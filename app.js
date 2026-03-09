@@ -977,10 +977,37 @@
     function saveHistoryResult(score, total, category) {
         const history = JSON.parse(localStorage.getItem('quiz-history') || '[]');
         const wrongIds = incorrectAnswers.map(item => item.question.id);
+
         // ensure there's a quiz id available
         if (!currentQuizId) {
             currentQuizId = generateQuizId();
         }
+
+        // calculate duration so we can show it later
+        const durationSec = startTime ? Math.floor((new Date() - startTime) / 1000) : 0;
+
+        // build category statistics snapshot
+        const catStats = {};
+        activeQuestions.forEach(q => {
+            const catName = q.category.replace(/^[0-9]+\s*/, '');
+            if (!catStats[catName]) catStats[catName] = { total: 0, correct: 0 };
+            catStats[catName].total++;
+            catStats[catName].correct++;
+        });
+        incorrectAnswers.forEach(item => {
+            const catName = item.question.category.replace(/^[0-9]+\s*/, '');
+            if (catStats[catName]) {
+                catStats[catName].correct--;
+            }
+        });
+
+        // copy incorrectAnswers so the history entry is self‑contained
+        const incorrectCopy = incorrectAnswers.map(i => ({
+            question: i.question,
+            selected: i.selected,
+            timestamp: i.timestamp
+        }));
+
         const newEntry = {
             date: new Date().toISOString(),
             quizId: currentQuizId,
@@ -988,7 +1015,10 @@
             total: total,
             category: category, // null means "All"
             wrongIds, // array of ids for questions answered incorrectly
-            retry: !!currentIsRetry
+            retry: !!currentIsRetry,
+            duration: durationSec,
+            catStats,
+            incorrectAnswers: incorrectCopy
         };
         
         // Add to beginning
@@ -1043,9 +1073,15 @@
                     <span class="history-badge ${badgeClass}">${percent}%</span>
                 </div>
             `;
-            // make history item clickable for review/retry
+            // make history item clickable: newer entries show full details, older ones fall back to retry logic
             el.style.cursor = 'pointer';
-            el.addEventListener('click', () => handleHistoryClick(item));
+            el.addEventListener('click', () => {
+                if (item && item.incorrectAnswers) {
+                    viewHistoryEntry(item);
+                } else {
+                    handleHistoryClick(item);
+                }
+            });
             historyList.appendChild(el);
         });
     }
@@ -1101,6 +1137,210 @@
         startTimer();
         startTime = new Date();
         renderQuestionBatch();
+    }
+
+    // helper for showing past exam details
+    function viewHistoryEntry(entry) {
+        score = entry.score;
+        wrongScore = entry.wrongIds.length;
+        originalTotalQuestions = entry.total;
+        incorrectAnswers = entry.incorrectAnswers.map(i => ({
+            question: i.question,
+            selected: i.selected,
+            timestamp: new Date(i.timestamp)
+        }));
+        selectedCategory = entry.category || null;
+        currentQuizId = entry.quizId || '';
+        currentIsRetry = !!entry.retry;
+
+        // in history view we don't offer PDF export (would use stale state)
+        if (btnExportPdf) {
+            btnExportPdf.classList.add('hidden');
+        }
+        if (avgTimeDisplay) avgTimeDisplay.style.display = 'none';
+        progressFill.style.width = '100%';
+        progressText.textContent = `Ergebnis von ${originalTotalQuestions} Fragen`;
+
+        const percent = originalTotalQuestions > 0 ? Math.round((score / originalTotalQuestions) * 100) : 0;
+        if (resStatCorrect) resStatCorrect.textContent = score;
+        if (resStatWrong) resStatWrong.textContent = wrongScore;
+        if (resStatPercent) resStatPercent.textContent = `${percent}%`;
+        if (resStatTime) resStatTime.textContent = formatTime(entry.duration || 0);
+
+        if (categoryBreakdownContainer && categoryBreakdownList) {
+            categoryBreakdownContainer.classList.remove('hidden');
+            categoryBreakdownList.innerHTML = '';
+            Object.keys(entry.catStats || {}).forEach(cat => {
+                const data = entry.catStats[cat];
+                if (data.total === 0) return;
+                const p = Math.round((data.correct / data.total) * 100);
+                let colorClass = 'low';
+                if (p >= 80) colorClass = 'high';
+                else if (p >= 50) colorClass = 'med';
+
+                const item = document.createElement('div');
+                item.className = 'cat-stat-item';
+                item.innerHTML = `
+                    <div class="cat-stat-header">
+                        <span>${cat}</span>
+                        <span>${data.correct}/${data.total} (${p}%)</span>
+                    </div>
+                    <div class="cat-progress-track">
+                        <div class="cat-progress-fill ${colorClass}" style="width: ${p}%"></div>
+                    </div>
+                `;
+                categoryBreakdownList.appendChild(item);
+            });
+        }
+
+        if (resultCompletionTime) {
+            const d = new Date(entry.date);
+            const datePart = d.toLocaleDateString('de-DE');
+            const timePart = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            resultCompletionTime.textContent = `Abgeschlossen am ${datePart} um ${timePart} Uhr`;
+        }
+
+        const resultQuizIdEl = $('#result-quiz-id');
+        if (resultQuizIdEl && currentQuizId) {
+            resultQuizIdEl.textContent = `ID: ${currentQuizId}${currentIsRetry ? ' (Wiederholung)' : ''}`;
+        }
+
+        let iconHTML, titleText, subtitleText, messageText, iconClass;
+        if (percent === 100) {
+            iconClass = 'perfect';
+            iconHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+            titleText = 'Perfekt! 🎉';
+            subtitleText = 'Alle Fragen komplett richtig beantwortet!';
+            messageText = 'Hervorragende Leistung! Du hast jede Frage fehlerfrei beantwortet. Dein KI-Wissen ist top!';
+        } else if (percent >= 80) {
+            iconClass = 'perfect';
+            iconHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+            titleText = 'Sehr gut! 🌟';
+            subtitleText = `Du hast ${score} von ${originalTotalQuestions} Fragen komplett richtig (${percent}%).`;
+            messageText = 'Ausgezeichnet! Du hast ein starkes Fundament. Die wenigen Fehler sind leicht aufholbar.';
+        } else if (percent >= 50) {
+            iconClass = 'good';
+            iconHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+            titleText = 'Gut gemacht! 👍';
+            subtitleText = `Du hast ${score} von ${originalTotalQuestions} Fragen komplett richtig (${percent}%).`;
+            messageText = 'Solide Leistung! Es gibt noch Raum für Verbesserung – probiere es erneut, um alles zu knacken.';
+        } else {
+            iconClass = 'needs-work';
+            iconHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+            titleText = 'Weiter üben! 💪';
+            subtitleText = `Du hast ${score} von ${originalTotalQuestions} Fragen komplett richtig (${percent}%).`;
+            messageText = 'Nicht aufgeben! Schau dir die Themen nochmal an und starte einen neuen Versuch.';
+        }
+
+        resultIconWrapper.className = `result-icon-wrapper ${iconClass}`;
+        resultIconWrapper.innerHTML = iconHTML;
+        resultTitle.textContent = titleText;
+        resultSubtitle.textContent = subtitleText;
+        resultMessage.textContent = messageText;
+
+        if (incorrectAnswers.length > 0) {
+            wrongAnswersSummary.classList.remove('hidden');
+            btnRetryIncorrect.classList.remove('hidden');
+            wrongAnswersList.innerHTML = '';
+
+            incorrectAnswers.forEach(item => {
+                const { question, selected, timestamp } = item;
+                const summaryItem = document.createElement('div');
+                summaryItem.className = 'wrong-answer-item';
+
+                const selectedSet = new Set(selected);
+                const correctSet = new Set(question.correctAnswers);
+
+                const correctTexts = question.correctAnswers
+                    .map(i => `${question.options[i].label}) ${question.options[i].text}`)
+                    .join(', ');
+                const answerLabel = question.correctAnswers.length > 1 ? 'Richtige Antworten' : 'Richtige Antwort';
+                const correctSummaryLine = `<p class="wrong-q-correct-summary"><strong>${answerLabel} wäre${question.correctAnswers.length > 1 ? 'n' : ''}: ${correctTexts}</strong></p>`;
+
+                let optionsHtml = '<div class="wrong-q-options-list">';
+                question.options.forEach((opt, index) => {
+                    const isSelected = selectedSet.has(index);
+                    const isCorrect = correctSet.has(index);
+                    let itemClass = 'wrong-q-option';
+                    let indicator = '';
+
+                    if (isSelected && !isCorrect) {
+                        itemClass += ' wrong';
+                        indicator = '✗ Deine Wahl';
+                    } else if (isCorrect) {
+                        if (isSelected) {
+                            itemClass += ' correct';
+                            indicator = '✓ Deine Wahl';
+                        } else {
+                            itemClass += ' missed';
+                            indicator = 'Wäre richtig gewesen';
+                        }
+                    } else { // not selected, not correct
+                        itemClass += ' neutral';
+                    }
+
+                    optionsHtml += `
+                        <div class="${itemClass}">
+                            <span class="option-line-content">
+                                <span class="option-line-label">${opt.label})</span>
+                                <span class="option-line-text">${opt.text}</span>
+                            </span>
+                            ${indicator ? `<span class="option-line-indicator">${indicator}</span>` : ''}
+                        </div>
+                    `;
+                });
+                optionsHtml += '</div>';
+
+                let rationaleHtml = '';
+                if (question.rationale) {
+                    rationaleHtml = `<div class="wrong-q-rationale"><strong>Erklärung:</strong> ${question.rationale}</div>`;
+                }
+
+                const formattedTime = timestamp.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+                summaryItem.innerHTML = `
+                    <div class="wrong-q-header">
+                        <p class="wrong-q-text">${question.question}</p>
+                        <span class="wrong-q-timestamp">${formattedTime} Uhr</span>
+                    </div>
+                    ${correctSummaryLine}
+                    ${optionsHtml}
+                    ${rationaleHtml}
+                `;
+                wrongAnswersList.appendChild(summaryItem);
+            });
+        } else {
+            wrongAnswersSummary.classList.add('hidden');
+            btnRetryIncorrect.classList.add('hidden');
+        }
+
+        scoreTotal.textContent = `/ ${originalTotalQuestions}`;
+        const scoreSvg = document.querySelector('.score-svg');
+        if (!scoreSvg.querySelector('#scoreGradient')) {
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            defs.innerHTML = `
+        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#6366f1"/>
+          <stop offset="100%" style="stop-color:#22c55e"/>
+        </linearGradient>
+      `;
+            scoreSvg.prepend(defs);
+        }
+
+        const circumference = 2 * Math.PI * 52;
+        const offset = circumference - (score / originalTotalQuestions) * circumference;
+        scoreCircle.style.transition = 'none';
+        scoreCircle.style.strokeDashoffset = circumference;
+        scoreNumber.textContent = '0';
+
+        showScreen(screenResult);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                scoreCircle.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+                scoreCircle.style.strokeDashoffset = offset;
+                animateNumber(scoreNumber, 0, score, 900);
+            });
+        });
     }
 
     // ── Go back to home ────────────────────────────────────
